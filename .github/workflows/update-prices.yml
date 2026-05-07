@@ -1,0 +1,38 @@
+name: Uppdatera priser
+
+on:
+  schedule:
+    - cron: '0 5 * * *'   # 05:00 UTC = 07:00 Stockholm (sommartid)
+  workflow_dispatch:        # Tillåter manuell körning från GitHub
+
+permissions:
+  contents: write
+
+jobs:
+  update-prices:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Installera beroenden
+        run: pip install requests beautifulsoup4
+
+      - name: Hämta priser
+        run: python scripts/update_prices.py
+
+      - name: Commita om priser ändrats
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet data.js; then
+            echo "Inga prisändringar — hoppar över commit."
+          else
+            git add data.js
+            git commit -m "Automatisk prisuppdatering $(date -u '+%Y-%m-%d')"
+            git push
+          fi
