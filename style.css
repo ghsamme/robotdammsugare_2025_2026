@@ -425,6 +425,111 @@ td.col-tomning.no-station  { color: var(--text-dim); }
   color: var(--text-dim);
 }
 
+/* ── Search dropdown ── */
+th.col-search-head {
+  text-align: center;
+  width: 48px;
+  min-width: 48px;
+}
+
+td.col-search {
+  text-align: center;
+  padding: 0.3rem 0.5rem;
+  position: relative;
+}
+
+.sdrop-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.sdrop-btn {
+  background: var(--bg-hover);
+  border: 1px solid var(--border-hi);
+  border-radius: 5px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0.28rem 0.5rem;
+  transition: border-color var(--transition), color var(--transition), background var(--transition);
+}
+.sdrop-btn:hover,
+.sdrop-btn[aria-expanded="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.sdrop-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 5px);
+  z-index: 300;
+  background: #1a1f2e;
+  border: 1px solid var(--border-hi);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.55);
+  min-width: 170px;
+  overflow: hidden;
+  animation: dropIn 0.12s ease;
+}
+
+@keyframes dropIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.sdrop-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.6rem 0.9rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.03em;
+  color: var(--text);
+  text-decoration: none;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--transition), color var(--transition);
+  white-space: nowrap;
+}
+.sdrop-item:last-child { border-bottom: none; }
+.sdrop-item:hover { background: var(--bg-hover); color: var(--text-bright); }
+
+.sdrop-yt:hover    { color: #ff4444; }
+.sdrop-google:hover { color: var(--accent); }
+.sdrop-gemini:hover { color: #a78bfa; }
+
+/* ── Toast ── */
+#appToast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #1a1f2e;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  padding: 0.6rem 1.2rem;
+  box-shadow: 0 4px 20px rgba(0,212,255,0.2);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 500;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+#appToast.toast-show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
 /* ── Prisjakt price cell ── */
 td.col-prisjakt { text-align: right; padding-right: 1.2rem; }
 
