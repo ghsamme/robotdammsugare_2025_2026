@@ -163,10 +163,6 @@
         ? `<span class="col-tomning has-station">${p.tomningsstation_liter} L</span>`
         : `<span class="col-tomning no-station">–</span>`;
 
-      const pjCell = p.pris_prisjakt !== null
-        ? `<a class="pj-link has-price" href="${esc(p.prisjakt_url)}" target="_blank" rel="noopener">${fmtPris(p.pris_prisjakt)}</a>`
-        : `<a class="pj-link no-price"  href="${esc(p.prisjakt_url)}" target="_blank" rel="noopener" title="Sök på Prisjakt">– ↗</a>`;
-
       const arClass = p.ar === 2026 ? 'badge badge-2026'
                     : p.ar === 2025 ? 'badge badge-2025'
                     : 'badge badge-2024';
@@ -175,6 +171,10 @@
       const q            = encodeURIComponent(fullName + ' robotdammsugare');
       const ytUrl        = `https://www.youtube.com/results?search_query=${q}`;
       const googleUrl    = `https://www.google.com/search?q=${q}`;
+
+      const pjCell = p.pris_prisjakt !== null
+        ? `<a class="pj-link has-price" href="${esc(googleUrl)}" target="_blank" rel="noopener">${fmtPris(p.pris_prisjakt)}</a>`
+        : `<a class="pj-link no-price"  href="${esc(googleUrl)}" target="_blank" rel="noopener" title="Sök på webben">– ↗</a>`;
       const geminiPrompt = `Gör en utvärdering av robotdammsugaren ${fullName}`;
 
       tr.innerHTML = `
