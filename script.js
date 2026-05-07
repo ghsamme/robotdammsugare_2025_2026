@@ -1,0 +1,249 @@
+(() => {
+  // ── State ──────────────────────────────────────────────────
+  let sortKey = 'pris_uppskattning';
+  let sortAsc = true;
+  let activeFilters = {
+    navigering:      new Set(),
+    hinderdetektion: new Set(),
+    moppteknik:      new Set(),
+    borstar:         new Set(),
+    filtyp:          new Set(),
+    ar:              new Set(),
+    station: 'alla',
+    prisMin: null,
+    prisMax: null,
+  };
+  let searchTerm = '';
+
+  // ── DOM refs ───────────────────────────────────────────────
+  const tbody        = document.getElementById('produktBody');
+  const resultInfo   = document.getElementById('resultInfo');
+  const searchInput  = document.getElementById('searchInput');
+  const noResults    = document.getElementById('noResults');
+  const tableWrapper = document.querySelector('.table-wrapper');
+  const sidebar      = document.getElementById('sidebar');
+  const btnToggle    = document.getElementById('btnFilterToggle');
+  const btnSideClose = document.getElementById('toggleSidebar');
+  const prisMin      = document.getElementById('prisMin');
+  const prisMax      = document.getElementById('prisMax');
+
+  // ── Helpers ────────────────────────────────────────────────
+  const fmtPris = n => n.toLocaleString('sv-SE') + ' kr';
+  const unique  = key => [...new Set(produkter.map(p => p[key]).filter(Boolean))].sort();
+
+  // ── Build checkbox filter groups ───────────────────────────
+  function buildCheckboxGroup(containerId, filterKey, sortNum = false) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    let values = unique(filterKey);
+    if (sortNum) values = values.map(Number).sort((a, b) => a - b).map(String);
+    values.forEach(val => {
+      const label = document.createElement('label');
+      label.className = 'check-item';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.value = val;
+      cb.addEventListener('change', () => {
+        if (cb.checked) activeFilters[filterKey].add(val);
+        else activeFilters[filterKey].delete(val);
+        render();
+      });
+      label.appendChild(cb);
+      label.appendChild(document.createTextNode(val));
+      container.appendChild(label);
+    });
+  }
+
+  buildCheckboxGroup('filter-navigering',      'navigering');
+  buildCheckboxGroup('filter-hinderdetektion', 'hinderdetektion');
+  buildCheckboxGroup('filter-moppteknik',      'moppteknik');
+  buildCheckboxGroup('filter-borstar',         'borstar');
+  buildCheckboxGroup('filter-filtyp',          'filtyp');
+  buildCheckboxGroup('filter-ar',              'ar', true);
+
+  // ── Station radio ──────────────────────────────────────────
+  document.querySelectorAll('input[name="station"]').forEach(r => {
+    r.addEventListener('change', () => { activeFilters.station = r.value; render(); });
+  });
+
+  // ── Price range (filters on pris_uppskattning) ─────────────
+  prisMin.addEventListener('input', () => {
+    activeFilters.prisMin = prisMin.value !== '' ? Number(prisMin.value) : null;
+    render();
+  });
+  prisMax.addEventListener('input', () => {
+    activeFilters.prisMax = prisMax.value !== '' ? Number(prisMax.value) : null;
+    render();
+  });
+
+  // ── Search ─────────────────────────────────────────────────
+  searchInput.addEventListener('input', () => {
+    searchTerm = searchInput.value.trim().toLowerCase();
+    render();
+  });
+
+  // ── Sorting ────────────────────────────────────────────────
+  document.querySelectorAll('th[data-key]').forEach(th => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.key;
+      if (sortKey === key) sortAsc = !sortAsc;
+      else { sortKey = key; sortAsc = true; }
+      updateSortHeaders();
+      render();
+    });
+  });
+
+  function updateSortHeaders() {
+    document.querySelectorAll('th[data-key]').forEach(th => {
+      const arrow  = th.querySelector('.sort-arrow');
+      const active = th.dataset.key === sortKey;
+      th.classList.toggle('active', active);
+      arrow.textContent = active ? (sortAsc ? '↑' : '↓') : '';
+    });
+  }
+
+  // ── Filter + sort logic ────────────────────────────────────
+  function filtered() {
+    return produkter.filter(p => {
+      if (searchTerm) {
+        const hay = (p.tillverkare + ' ' + p.modellnamn).toLowerCase();
+        if (!hay.includes(searchTerm)) return false;
+      }
+      if (activeFilters.navigering.size      && !activeFilters.navigering.has(p.navigering))           return false;
+      if (activeFilters.hinderdetektion.size && !activeFilters.hinderdetektion.has(p.hinderdetektion)) return false;
+      if (activeFilters.moppteknik.size      && !activeFilters.moppteknik.has(p.moppteknik))           return false;
+      if (activeFilters.borstar.size         && !activeFilters.borstar.has(p.borstar))                 return false;
+      if (activeFilters.filtyp.size          && !activeFilters.filtyp.has(p.filtyp))                   return false;
+      if (activeFilters.ar.size              && !activeFilters.ar.has(String(p.ar)))                   return false;
+
+      if (activeFilters.station === 'ja'  && p.tomningsstation_liter === 0) return false;
+      if (activeFilters.station === 'nej' && p.tomningsstation_liter > 0)   return false;
+
+      if (activeFilters.prisMin !== null && p.pris_uppskattning < activeFilters.prisMin) return false;
+      if (activeFilters.prisMax !== null && p.pris_uppskattning > activeFilters.prisMax) return false;
+
+      return true;
+    });
+  }
+
+  function sorted(list) {
+    return [...list].sort((a, b) => {
+      let va = a[sortKey], vb = b[sortKey];
+      // null sorts last regardless of direction
+      if (va === null && vb === null) return 0;
+      if (va === null) return 1;
+      if (vb === null) return -1;
+      if (typeof va === 'string') va = va.toLowerCase();
+      if (typeof vb === 'string') vb = vb.toLowerCase();
+      if (va < vb) return sortAsc ? -1 : 1;
+      if (va > vb) return sortAsc ? 1 : -1;
+      return 0;
+    });
+  }
+
+  // ── Render table ───────────────────────────────────────────
+  function render() {
+    const list = sorted(filtered());
+    tbody.innerHTML = '';
+
+    const showing = list.length;
+    const total   = produkter.length;
+    resultInfo.innerHTML =
+      `Visar <span class="count">${showing}</span> av <span class="count">${total}</span> produkter`;
+
+    noResults.hidden    = showing > 0;
+    tableWrapper.hidden = showing === 0;
+
+    list.forEach((p, i) => {
+      const tr = document.createElement('tr');
+      tr.className = 'fade-enter';
+      tr.style.animationDelay = `${Math.min(i * 12, 120)}ms`;
+
+      const tomning = p.tomningsstation_liter > 0
+        ? `<span class="col-tomning has-station">${p.tomningsstation_liter} L</span>`
+        : `<span class="col-tomning no-station">–</span>`;
+
+      const pjCell = p.pris_prisjakt !== null
+        ? `<a class="pj-link has-price" href="${esc(p.prisjakt_url)}" target="_blank" rel="noopener">${fmtPris(p.pris_prisjakt)}</a>`
+        : `<a class="pj-link no-price"  href="${esc(p.prisjakt_url)}" target="_blank" rel="noopener" title="Sök på Prisjakt">– ↗</a>`;
+
+      const arClass = p.ar === 2026 ? 'badge badge-2026'
+                    : p.ar === 2025 ? 'badge badge-2025'
+                    : 'badge badge-2024';
+
+      tr.innerHTML = `
+        <td class="col-tillverkare">${esc(p.tillverkare)}</td>
+        <td class="col-modell">${esc(p.modellnamn)}</td>
+        <td class="col-pris">${fmtPris(p.pris_uppskattning)}</td>
+        <td class="col-prisjakt">${pjCell}</td>
+        <td class="col-sugkraft">${p.sugkraft.toLocaleString('sv-SE')} Pa</td>
+        <td><span class="badge">${esc(p.navigering)}</span></td>
+        <td>${esc(p.hinderdetektion)}</td>
+        <td><span class="badge">${esc(p.moppteknik)}</span></td>
+        <td><span class="badge">${esc(p.borstar)}</span></td>
+        <td style="text-align:right;padding-right:1.2rem">${tomning}</td>
+        <td class="col-klattring">${p.klattring_mm} mm</td>
+        <td><span class="badge">${esc(p.filtyp)}</span></td>
+        <td><span class="${arClass}">${p.ar}</span></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function esc(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  // ── Reset ──────────────────────────────────────────────────
+  function resetAll() {
+    searchTerm = '';
+    searchInput.value = '';
+    activeFilters.navigering.clear();
+    activeFilters.hinderdetektion.clear();
+    activeFilters.moppteknik.clear();
+    activeFilters.borstar.clear();
+    activeFilters.filtyp.clear();
+    activeFilters.ar.clear();
+    activeFilters.station = 'alla';
+    activeFilters.prisMin = null;
+    activeFilters.prisMax = null;
+    document.querySelectorAll('.checkbox-list input[type="checkbox"]').forEach(cb => cb.checked = false);
+    document.querySelector('input[name="station"][value="alla"]').checked = true;
+    prisMin.value = '';
+    prisMax.value = '';
+    render();
+  }
+
+  document.getElementById('btnReset').addEventListener('click', resetAll);
+  document.getElementById('btnResetEmpty').addEventListener('click', resetAll);
+
+  // ── Mobile sidebar ─────────────────────────────────────────
+  btnToggle.addEventListener('click', () => {
+    sidebar.classList.toggle('open');
+    let overlay = document.getElementById('sidebarOverlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'sidebarOverlay';
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:199;';
+      overlay.addEventListener('click', closeSidebar);
+      document.body.appendChild(overlay);
+    }
+    overlay.style.display = sidebar.classList.contains('open') ? 'block' : 'none';
+  });
+
+  function closeSidebar() {
+    sidebar.classList.remove('open');
+    const overlay = document.getElementById('sidebarOverlay');
+    if (overlay) overlay.style.display = 'none';
+  }
+
+  btnSideClose.addEventListener('click', closeSidebar);
+
+  // ── Init ───────────────────────────────────────────────────
+  updateSortHeaders();
+  render();
+})();

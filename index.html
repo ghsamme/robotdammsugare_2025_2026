@@ -1,0 +1,144 @@
+<!-- Deploy: pusha till GitHub, aktivera Pages från Settings > Pages > Branch: main / root -->
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RobotVacDB — Databas för robotdammsugare 2024+</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">⬡</span>
+        <span class="logo-text">RobotVac<span class="accent">DB</span></span>
+      </div>
+      <p class="tagline">Databas för robotdammsugare · 2024 och framåt</p>
+    </div>
+  </header>
+
+  <main>
+    <div class="layout">
+
+      <!-- ── SIDEBAR / FILTER-PANEL ── -->
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <span class="sidebar-title">Filter</span>
+          <button class="toggle-sidebar" id="toggleSidebar" aria-label="Stäng filter">✕</button>
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">Navigering</label>
+          <div class="checkbox-list" id="filter-navigering"></div>
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">Hinderdetektion</label>
+          <div class="checkbox-list" id="filter-hinderdetektion"></div>
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">Moppteknik</label>
+          <div class="checkbox-list" id="filter-moppteknik"></div>
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">Borstyp</label>
+          <div class="checkbox-list" id="filter-borstar"></div>
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">Filtertyp</label>
+          <div class="checkbox-list" id="filter-filtyp"></div>
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">Tömningsstation</label>
+          <div class="radio-list" id="filter-station">
+            <label class="check-item"><input type="radio" name="station" value="alla" checked /> Alla</label>
+            <label class="check-item"><input type="radio" name="station" value="ja" /> Ja</label>
+            <label class="check-item"><input type="radio" name="station" value="nej" /> Nej</label>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">Modellår</label>
+          <div class="checkbox-list" id="filter-ar"></div>
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">Uppsk. pris (kr)</label>
+          <div class="range-row">
+            <input type="number" id="prisMin" placeholder="Min" class="range-input" min="0" />
+            <span class="range-sep">–</span>
+            <input type="number" id="prisMax" placeholder="Max" class="range-input" min="0" />
+          </div>
+        </div>
+
+        <button class="btn-reset" id="btnReset">↺ Rensa filter</button>
+      </aside>
+
+      <!-- ── MAIN CONTENT ── -->
+      <div class="content">
+
+        <div class="toolbar">
+          <div class="search-wrap">
+            <span class="search-icon">⌕</span>
+            <input
+              type="search"
+              id="searchInput"
+              placeholder="Sök tillverkare eller modell…"
+              autocomplete="off"
+            />
+          </div>
+          <button class="btn-filter-toggle" id="btnFilterToggle">⚙ Filter</button>
+        </div>
+
+        <div class="result-info" id="resultInfo">Laddar…</div>
+
+        <div class="table-wrapper">
+          <table id="produktTable">
+            <thead>
+              <tr>
+                <th data-key="tillverkare">Tillverkare <span class="sort-arrow"></span></th>
+                <th data-key="modellnamn">Modell <span class="sort-arrow"></span></th>
+                <th data-key="pris_uppskattning">Uppsk. pris <span class="sort-arrow"></span></th>
+                <th data-key="pris_prisjakt" class="col-prisjakt-head">Prisjakt lägst <span class="sort-arrow"></span></th>
+                <th data-key="sugkraft">Sugkraft <span class="sort-arrow"></span></th>
+                <th data-key="navigering">Navigering <span class="sort-arrow"></span></th>
+                <th data-key="hinderdetektion">Hinderdetektion <span class="sort-arrow"></span></th>
+                <th data-key="moppteknik">Moppteknik <span class="sort-arrow"></span></th>
+                <th data-key="borstar">Borstar <span class="sort-arrow"></span></th>
+                <th data-key="tomningsstation_liter">Tömning <span class="sort-arrow"></span></th>
+                <th data-key="klattring_mm">Klättring <span class="sort-arrow"></span></th>
+                <th data-key="filtyp">Filter <span class="sort-arrow"></span></th>
+                <th data-key="ar">År <span class="sort-arrow"></span></th>
+              </tr>
+            </thead>
+            <tbody id="produktBody"></tbody>
+          </table>
+        </div>
+
+        <div class="no-results" id="noResults" hidden>
+          <span class="no-results-icon">◎</span>
+          <p>Inga produkter matchar filtren.</p>
+          <button class="btn-reset small" id="btnResetEmpty">Rensa filter</button>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>RobotVacDB · Data avser modeller från 2024 och framåt · Prisjakt-priser hämtade manuellt maj 2026 · <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a></p>
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
