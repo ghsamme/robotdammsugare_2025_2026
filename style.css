@@ -428,15 +428,27 @@ td.col-tomning.no-station  { color: var(--text-dim); }
 /* ── Search dropdown ── */
 th.col-search-head {
   text-align: center;
-  width: 48px;
-  min-width: 48px;
+  width: 52px;
+  min-width: 52px;
+  position: sticky;
+  right: 0;
+  background: var(--bg-card);
+  border-left: 1px solid var(--border-hi);
+  z-index: 2;
 }
 
 td.col-search {
   text-align: center;
   padding: 0.3rem 0.5rem;
-  position: relative;
+  position: sticky;
+  right: 0;
+  background: var(--bg-table);
+  border-left: 1px solid var(--border);
+  z-index: 1;
 }
+
+tbody tr:nth-child(even) td.col-search { background: var(--bg-row-alt); }
+tbody tr:hover td.col-search           { background: var(--bg-hover); }
 
 .sdrop-wrap {
   position: relative;
