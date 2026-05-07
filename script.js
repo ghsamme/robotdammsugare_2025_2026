@@ -171,10 +171,10 @@
                     : p.ar === 2025 ? 'badge badge-2025'
                     : 'badge badge-2024';
 
-      const fullName   = `${p.tillverkare} ${p.modellnamn}`;
-      const q          = encodeURIComponent(fullName + ' robotdammsugare');
-      const ytUrl      = `https://www.youtube.com/results?search_query=${q}`;
-      const googleUrl  = `https://www.google.com/search?q=${q}`;
+      const fullName     = `${p.tillverkare} ${p.modellnamn}`;
+      const q            = encodeURIComponent(fullName + ' robotdammsugare');
+      const ytUrl        = `https://www.youtube.com/results?search_query=${q}`;
+      const googleUrl    = `https://www.google.com/search?q=${q}`;
       const geminiPrompt = `Gör en utvärdering av robotdammsugaren ${fullName}`;
 
       tr.innerHTML = `
@@ -192,23 +192,11 @@
         <td><span class="badge">${esc(p.filtyp)}</span></td>
         <td><span class="${arClass}">${p.ar}</span></td>
         <td class="col-search">
-          <div class="sdrop-wrap">
-            <button class="sdrop-btn" aria-haspopup="true" aria-expanded="false">⌕</button>
-            <div class="sdrop-menu" hidden>
-              <a class="sdrop-item sdrop-yt"
-                 href="${esc(ytUrl)}" target="_blank" rel="noopener">
-                ▶ YouTube
-              </a>
-              <a class="sdrop-item sdrop-google"
-                 href="${esc(googleUrl)}" target="_blank" rel="noopener">
-                ⌕ Webbsök
-              </a>
-              <button class="sdrop-item sdrop-gemini"
-                      data-prompt="${esc(geminiPrompt)}">
-                ✦ Gemini AI
-              </button>
-            </div>
-          </div>
+          <button class="sdrop-btn"
+                  data-yt="${esc(ytUrl)}"
+                  data-google="${esc(googleUrl)}"
+                  data-prompt="${esc(geminiPrompt)}"
+                  aria-haspopup="true" aria-expanded="false">⌕</button>
         </td>
       `;
       tbody.appendChild(tr);
@@ -246,47 +234,75 @@
   document.getElementById('btnReset').addEventListener('click', resetAll);
   document.getElementById('btnResetEmpty').addEventListener('click', resetAll);
 
-  // ── Search dropdown ────────────────────────────────────────
-  function closeAllDropdowns(except) {
-    document.querySelectorAll('.sdrop-menu').forEach(m => {
-      if (m !== except) {
-        m.hidden = true;
-        m.previousElementSibling.setAttribute('aria-expanded', 'false');
-      }
-    });
+  // ── Global dropdown (appended to body to escape table stacking context) ──
+  const globalMenu = document.createElement('div');
+  globalMenu.id = 'sdropGlobal';
+  globalMenu.hidden = true;
+  globalMenu.innerHTML = `
+    <a id="sdropYt"     class="sdrop-item sdrop-yt"     target="_blank" rel="noopener">▶ YouTube</a>
+    <a id="sdropGoogle" class="sdrop-item sdrop-google"  target="_blank" rel="noopener">⌕ Webbsök</a>
+    <button id="sdropGemini" class="sdrop-item sdrop-gemini">✦ Gemini AI</button>
+  `;
+  document.body.appendChild(globalMenu);
+
+  const sdropYt     = document.getElementById('sdropYt');
+  const sdropGoogle = document.getElementById('sdropGoogle');
+  const sdropGemini = document.getElementById('sdropGemini');
+
+  let activeBtn = null;
+
+  function openMenu(btn) {
+    const rect = btn.getBoundingClientRect();
+    sdropYt.href     = btn.dataset.yt;
+    sdropGoogle.href = btn.dataset.google;
+    sdropGemini.dataset.prompt = btn.dataset.prompt;
+
+    // Position: prefer below-right aligned to button's right edge
+    globalMenu.hidden = false;
+    const mw = globalMenu.offsetWidth;
+    let left = rect.right - mw;
+    if (left < 8) left = 8;
+    globalMenu.style.top  = (rect.bottom + window.scrollY + 4) + 'px';
+    globalMenu.style.left = left + 'px';
+
+    if (activeBtn) activeBtn.setAttribute('aria-expanded', 'false');
+    activeBtn = btn;
+    btn.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeMenu() {
+    globalMenu.hidden = true;
+    if (activeBtn) { activeBtn.setAttribute('aria-expanded', 'false'); activeBtn = null; }
   }
 
   tbody.addEventListener('click', e => {
-    // Toggle button
     const btn = e.target.closest('.sdrop-btn');
     if (btn) {
-      const menu = btn.nextElementSibling;
-      const opening = menu.hidden;
-      closeAllDropdowns(opening ? menu : null);
-      menu.hidden = !opening;
-      btn.setAttribute('aria-expanded', opening ? 'true' : 'false');
+      e.stopPropagation();
+      if (activeBtn === btn && !globalMenu.hidden) { closeMenu(); return; }
+      openMenu(btn);
       return;
     }
-
-    // Gemini item — copy prompt + open Gemini
-    const geminiBtn = e.target.closest('.sdrop-gemini');
-    if (geminiBtn) {
-      const prompt = geminiBtn.dataset.prompt;
-      navigator.clipboard.writeText(prompt).catch(() => {});
-      window.open('https://gemini.google.com/', '_blank', 'noopener');
-      closeAllDropdowns(null);
-      showToast('Frågan kopierad — klistra in i Gemini');
-      return;
-    }
-
-    // Close if clicking a link item
-    if (e.target.closest('.sdrop-item')) closeAllDropdowns(null);
   });
 
-  // Close dropdown on outside click
+  sdropGemini.addEventListener('click', () => {
+    const prompt = sdropGemini.dataset.prompt;
+    navigator.clipboard.writeText(prompt).catch(() => {});
+    window.open('https://gemini.google.com/', '_blank', 'noopener');
+    closeMenu();
+    showToast('Frågan kopierad — klistra in i Gemini');
+  });
+
+  globalMenu.addEventListener('click', e => {
+    if (e.target.closest('a')) closeMenu();
+  });
+
   document.addEventListener('click', e => {
-    if (!e.target.closest('.sdrop-wrap')) closeAllDropdowns(null);
+    if (!e.target.closest('.sdrop-btn') && !e.target.closest('#sdropGlobal')) closeMenu();
   });
+
+  window.addEventListener('scroll',  closeMenu, { passive: true });
+  window.addEventListener('resize',  closeMenu, { passive: true });
 
   // ── Toast notification ─────────────────────────────────────
   function showToast(msg) {

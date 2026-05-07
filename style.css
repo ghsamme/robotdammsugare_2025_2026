@@ -450,9 +450,17 @@ td.col-search {
 tbody tr:nth-child(even) td.col-search { background: var(--bg-row-alt); }
 tbody tr:hover td.col-search           { background: var(--bg-hover); }
 
-.sdrop-wrap {
-  position: relative;
-  display: inline-block;
+/* Global dropdown — appended to body, position:absolute avoids table stacking context */
+#sdropGlobal {
+  position: absolute;
+  z-index: 9999;
+  background: #1a1f2e;
+  border: 1px solid var(--border-hi);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.65);
+  min-width: 170px;
+  overflow: hidden;
+  animation: dropIn 0.12s ease;
 }
 
 .sdrop-btn {
@@ -473,19 +481,6 @@ tbody tr:hover td.col-search           { background: var(--bg-hover); }
   background: var(--accent-glow);
 }
 
-.sdrop-menu {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 5px);
-  z-index: 300;
-  background: #1a1f2e;
-  border: 1px solid var(--border-hi);
-  border-radius: var(--radius);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.55);
-  min-width: 170px;
-  overflow: hidden;
-  animation: dropIn 0.12s ease;
-}
 
 @keyframes dropIn {
   from { opacity: 0; transform: translateY(-6px); }
